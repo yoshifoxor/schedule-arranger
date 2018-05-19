@@ -9,6 +9,24 @@ var helmet = require('helmet');
 var session = require('express-session');
 var passport = require('passport');
 
+// モデルの読み込み
+var User = require('./models/user');
+var Schedule = require('./models/schedule');
+var Availability = require('./models/availability');
+var Candidate = require('./models/candidate');
+var Comment = require('./models/comment');
+User.sync().then(() => {
+  Schedule.belongsTo(User, {foreignKey: 'createdBy'});
+  Schedule.sync();
+  Comment.belongsTo(User, {foreignKey: 'userId'});
+  Comment.sync();
+  Availability.belongsTo(User, {foreignKey: 'userId'});
+  Candidate.sync().then(() => {
+    Availability.belongsTo(Candidate, {foreignKey: 'candidateId'});
+    Availability.sync();
+  });
+});
+
 var GitHubStrategy = require('passport-github2').Strategy;
 var GITHUB_CLIENT_ID = 'ef55e8e43d4b055a20a2';
 var GITHUB_CLIENT_SECRET = '97c839c0d76cfb26697eb87b46caff277599850d';
@@ -29,7 +47,14 @@ passport.use(new GitHubStrategy({
   },
   function (accessToken, refreshToken, profile, done) {
     process.nextTick(function () {
-      return done(null, profile);
+      //return done(null, profile);
+
+      User.upsert({
+        userId: profile.id,
+        username: profile.username
+      }).then(() => {
+        done(null, profile);
+      });
     });
   }
 ));
@@ -56,7 +81,11 @@ app.use(bodyParser.urlencoded({
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(session({ secret: '1e30c1b0096c1b22', resave: false, saveUninitialized: false }));
+app.use(session({
+  secret: '1e30c1b0096c1b22',
+  resave: false,
+  saveUninitialized: false
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -66,15 +95,18 @@ app.use('/login', login);
 app.use('/logout', logout);
 
 app.get('/auth/github',
-  passport.authenticate('github', { scope: ['user:email'] }),
-  function (req, res) {
-});
+  passport.authenticate('github', {
+    scope: ['user:email']
+  }),
+  function (req, res) {});
 
 app.get('/auth/github/callback',
-  passport.authenticate('github', { failureRedirect: '/login' }),
+  passport.authenticate('github', {
+    failureRedirect: '/login'
+  }),
   function (req, res) {
     res.redirect('/');
-});
+  });
 
 
 // catch 404 and forward to error handler
