@@ -111,7 +111,17 @@ app.get('/auth/github/callback',
     failureRedirect: '/login'
   }),
   function (req, res) {
-    res.redirect('/');
+    // res.redirect('/');
+    var loginFrom = req.cookies.loginFrom;
+    // オープンリダイレクタ脆弱性対策
+    if (loginFrom &&
+      loginFrom.indexOf('http://') < 0 &&
+      loginFrom.indexOf('https://') < 0) {
+      res.clearCookie('loginFrom');
+      res.redirect(loginFrom);
+    } else {
+      res.redirect('/');
+    }
   });
 
 
