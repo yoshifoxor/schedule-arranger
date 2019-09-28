@@ -1,35 +1,15 @@
+var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
 var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
+var logger = require('morgan');
 var helmet = require('helmet');
-
 var session = require('express-session');
 var passport = require('passport');
 
-// モデルの読み込み
-var User = require('./models/user');
-var Schedule = require('./models/schedule');
-var Availability = require('./models/availability');
-var Candidate = require('./models/candidate');
-var Comment = require('./models/comment');
-User.sync().then(() => {
-  Schedule.belongsTo(User, {foreignKey: 'createdBy'});
-  Schedule.sync();
-  Comment.belongsTo(User, {foreignKey: 'userId'});
-  Comment.sync();
-  Availability.belongsTo(User, {foreignKey: 'userId'});
-  Candidate.sync().then(() => {
-    Availability.belongsTo(Candidate, {foreignKey: 'candidateId'});
-    Availability.sync();
-  });
-});
-
 var GitHubStrategy = require('passport-github2').Strategy;
-var GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || 'ef55e8e43d4b055a20a2';
-var GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '97c839c0d76cfb26697eb87b46caff277599850d';
+var GITHUB_CLIENT_ID = 'ef55e8e43d4b055a20a2';
+var GITHUB_CLIENT_SECRET = 'da5c9b699cf9716c6112c68ca4236e07d2f17ee4';
 
 passport.serializeUser(function (user, done) {
   done(null, user);
@@ -39,122 +19,68 @@ passport.deserializeUser(function (obj, done) {
   done(null, obj);
 });
 
-
 passport.use(new GitHubStrategy({
-    clientID: GITHUB_CLIENT_ID,
-    clientSecret: GITHUB_CLIENT_SECRET,
-    callbackURL: process.env.HEROKU_URL ? process.env.HEROKU_URL + 'auth/github/callback' : 'http://localhost:8000/auth/github/callback'
-  },
+  clientID: GITHUB_CLIENT_ID,
+  clientSecret: GITHUB_CLIENT_SECRET,
+  callbackURL: 'http://localhost:8000/auth/github/callback'
+},
   function (accessToken, refreshToken, profile, done) {
     process.nextTick(function () {
-      //return done(null, profile);
-
-      User.upsert({
-        userId: profile.id,
-        username: profile.username
-      }).then(() => {
-        done(null, profile);
-      });
+      return done(null, profile);
     });
   }
 ));
 
-var routes = require('./routes/index');
-//var users = require('./routes/users');
-var login = require('./routes/login');
-var logout = require('./routes/logout');
-var schedules = require('./routes/schedules');
-var availabilities = require('./routes/availabilities');
-var comments = require('./routes/comments');
+var indexRouter = require('./routes/index');
+var loginRouter = require('./routes/login');
+var logoutRouter = require('./routes/logout');
 
 var app = express();
 app.use(helmet());
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.set('view engine', 'pug');
 
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({
-  extended: false
-}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(session({
-  secret: '1e30c1b0096c1b22',
-  resave: false,
-  saveUninitialized: false
-}));
+app.use(session({ secret: '6360032070c57de6', resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use('/', routes);
-//app.use('/users', users);
-app.use('/login', login);
-app.use('/logout', logout);
-app.use('/schedules', schedules);
-app.use('/schedules', availabilities);
-app.use('/schedules', comments);
+app.use('/', indexRouter);
+app.use('/login', loginRouter);
+app.use('/logout', logoutRouter);
 
 app.get('/auth/github',
-  passport.authenticate('github', {
-    scope: ['user:email']
-  }),
-  function (req, res) {});
+  passport.authenticate('github', { scope: ['user:email'] }),
+  function (req, res) {
+});
 
 app.get('/auth/github/callback',
-  passport.authenticate('github', {
-    failureRedirect: '/login'
-  }),
+  passport.authenticate('github', { failureRedirect: '/login' }),
   function (req, res) {
-    // res.redirect('/');
-    var loginFrom = req.cookies.loginFrom;
-    // オープンリダイレクタ脆弱性対策
-    if (loginFrom &&
-      loginFrom.indexOf('http://') < 0 &&
-      loginFrom.indexOf('https://') < 0) {
-      res.clearCookie('loginFrom');
-      res.redirect(loginFrom);
-    } else {
-      res.redirect('/');
-    }
-  });
-
+    res.redirect('/');
+});
 
 // catch 404 and forward to error handler
-app.use(function (req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
+app.use(function(req, res, next) {
+  next(createError(404));
 });
 
-// error handlers
+// error handler
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-  app.use(function (err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('error', {
-      message: err.message,
-      error: err
-    });
-  });
-}
-
-// production error handler
-// no stacktraces leaked to user
-app.use(function (err, req, res, next) {
+  // render the error page
   res.status(err.status || 500);
-  res.render('error', {
-    message: err.message,
-    error: {}
-  });
+  res.render('error');
 });
-
 
 module.exports = app;
