@@ -1,6 +1,6 @@
 'use strict';
 const Sequelize = require('sequelize');
-const sequelize = new Sequelize('secret_board', 'postgres', 'kus10a93w', {
+const sequelize = new Sequelize('schedule_arranger', 'postgres', 'kus10a93w', {
   dialect: 'postgres',
   logging: true,
   operatorsAliases: false
