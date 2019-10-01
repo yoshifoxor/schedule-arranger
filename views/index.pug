@@ -15,6 +15,7 @@ block content
           th 予定名
           th 更新日時
         each schedule in schedules
-          td
-            a(href=`/schedules/${schedule.scheduleId}`) #{schedule.scheduleName}
-          td #{schedule.formattedUpdatedAt}
+          tr
+            td
+              a(href=`/schedules/${schedule.scheduleId}`) #{schedule.scheduleName}
+            td #{schedule.formattedUpdatedAt}
