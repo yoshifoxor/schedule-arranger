@@ -23,7 +23,7 @@
     "passport-github2": "^0.1.9",
     "pg": "^6.1.0",
     "pg-hstore": "^2.3.2",
-    "sequelize": "^3.25.0",
+    "sequelize": "^5.21.2",
     "serve-favicon": "~2.3.0"
   },
   "devDependencies": {
