@@ -1,0 +1,33 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/node:8.9.4
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}
+          - v1-dependencies-
+
+      - run: yarn install
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+
+      - run: mkdir junit
+      - run:
+          command: node_modules/.bin/mocha test --reporter mocha-junit-reporter --timeout 10000
+          environment:
+            MOCHA_FILE: ./junit/test-results.xml
+          when: always
+      - store_test_results:
+          path: ./junit
+      - store_artifacts:
+          path: ./junit
