@@ -1,8 +1,9 @@
 'use strict';
 const fs = require('fs');
 const Sequelize = require('sequelize');
-const db = { database: "schedule_arranger", username: "postgres", password: "" };
-let config = (fs.statSync('config.js').isFile()) ? require('../config') : { db };
+const db = { database: 'schedule_arranger', username: 'postgres', password: 'postgres' };
+let config = (fs.existsSync('config.js') && fs.statSync('config.js').isFile()) ? require('../config') : { db };
+
 let sequelize;
   try {
     sequelize = new Sequelize(
