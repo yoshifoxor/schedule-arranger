@@ -7,7 +7,7 @@ let config = (fs.existsSync('config.js') && fs.statSync('config.js').isFile()) ?
 let sequelize;
   try {
     sequelize = new Sequelize(
-      rocess.env.DATABASE_URL ||
+      process.env.DATABASE_URL ||
       `postgres://${config.db.username}:${config.db.password}@localhost:5432/${config.db.database}`,
       { operatorsAliases: false });
   } catch (error) {
