@@ -28,8 +28,8 @@ User.sync().then(() => {
 var config = require('./config');
 
 var GitHubStrategy = require('passport-github2').Strategy;
-var GITHUB_CLIENT_ID = config.github.GITHUB_CLIENT_ID;
-var GITHUB_CLIENT_SECRET = config.github.GITHUB_CLIENT_SECRET;
+var GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || config.github.GITHUB_CLIENT_ID;
+var GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || config.github.GITHUB_CLIENT_SECRET;
 
 passport.serializeUser(function (user, done) {
   done(null, user);
@@ -42,7 +42,7 @@ passport.deserializeUser(function (obj, done) {
 passport.use(new GitHubStrategy({
       clientID: GITHUB_CLIENT_ID,
       clientSecret: GITHUB_CLIENT_SECRET,
-      callbackURL: config.github.callbackURL,
+      callbackURL: (process.env.HEROKU_URL ? process.env.HEROKU_URL : config.github.callbackURL) + 'auth/github/callback',
     },
     function (accessToken, refreshToken, profile, done) {
       process.nextTick(function () {
@@ -78,7 +78,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
-    secret: config.sessionSecret,
+    secret: process.env.sessionSecret || config.sessionSecret,
     resave: false,
     saveUninitialized: false,
   }));
@@ -99,7 +99,16 @@ app.get('/auth/github',
 app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
   function (req, res) {
-    res.redirect('/');
+    var loginFrom = req.cookies.loginFrom;
+    // オープンリダイレクタ脆弱性対策
+    if (loginFrom &&
+      !loginFrom.includes('http://') &&
+      !loginFrom.includes('https://')) {
+      res.clearCookie('loginFrom');
+      res.redirect(loginFrom);
+    } else {
+      res.redirect('/');
+    }
   });
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
