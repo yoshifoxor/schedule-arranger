@@ -1,5 +1,8 @@
 'use strict';
-import $ from 'jquery';
+// import $ from 'jquery';
+// const global = Function('return this;')();
+// global.jQuery = $;
+// import bootstrap from 'bootstrap';
 
 $('.availability-toggle-button').each((i, e) => {
   const button = $(e);
@@ -16,13 +19,17 @@ $('.availability-toggle-button').each((i, e) => {
         button.data('availability', data.availability);
         const availabilityLabels = ['欠', '？', '出'];
         button.text(availabilityLabels[data.availability]);
+
+        const buttonStyles = ['btn-danger', 'btn-secondary', 'btn-success'];
+        button.removeClass('btn-danger btn-secondary btn-success');
+        button.addClass(buttonStyles[data.availability]);
       }
     );
   });
 });
 
 const buttonSelfComment = $('#self-comment-button');
-buttonSelfComment.click(() => {
+buttonSelfComment.on('click', () => {
   const scheduleId = buttonSelfComment.data('schedule-id');
   const userId = buttonSelfComment.data('user-id');
   const comment = prompt('コメントを255文字以内で入力してください。');

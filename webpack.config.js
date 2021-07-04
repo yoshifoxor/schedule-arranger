@@ -1,3 +1,5 @@
+const webpack = require('webpack');
+
 module.exports = {
   context: __dirname + '/app',
   mode: 'production',
@@ -20,4 +22,11 @@ module.exports = {
       },
     ],
   },
+  plugins: [
+    new webpack.ProvidePlugin({
+      $: 'jquery',
+      jQuery: 'jquery',
+      'window.jQuery': 'jquery',
+    }),
+  ],
 };
