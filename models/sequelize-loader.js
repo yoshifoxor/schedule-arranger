@@ -1,6 +1,6 @@
 'use strict';
 const Sequelize = require('sequelize');
-const { database, dialect, username, password } = require('./sequelizeConfig');
+// const { database, dialect, username, password } = require('./sequelizeConfig');
 
 const options = {
   dialect: 'postgres',

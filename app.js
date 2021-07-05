@@ -25,7 +25,7 @@ User.sync().then(() => {
   });
 });
 
-var config = require('./config');
+//var config = require('./config');
 
 var GitHubStrategy = require('passport-github2').Strategy;
 var GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || config.github.GITHUB_CLIENT_ID;
