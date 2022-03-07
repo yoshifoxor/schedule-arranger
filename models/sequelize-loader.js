@@ -1,0 +1,20 @@
+'use strict';
+const { host } = require('pg/lib/defaults');
+const { Sequelize, DataTypes } = require('sequelize');
+require('dotenv').config();
+
+const { database, dialect, username, password } = {
+  database: 'schedule_arranger',
+  dialect: 'postgres',
+  host: process.env.POSTGRES_HOST,
+  username: 'postgres',
+  password: process.env.POSTGRES_PASSWORD,
+};
+
+const sequelize = new Sequelize(database, username, password, {
+  dialect: dialect,
+  host: host,
+  logging: false,
+});
+
+module.exports = { sequelize, DataTypes };
