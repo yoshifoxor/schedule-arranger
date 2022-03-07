@@ -1,19 +1,24 @@
 'use strict';
 const { sequelize, DataTypes } = require('./sequelize-loader');
 
-const User = sequelize.define('users', {
+const Comment = sequelize.define('comments', {
+    scheduleId: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      allowNull: false,
+    },
     userId: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       allowNull: false,
     },
-    username: {
+    comment: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-  },{
+  }, {
     freezeTableName: true,
     timestamps: false,
 });
 
-module.exports = User;
+module.exports = Comment;
