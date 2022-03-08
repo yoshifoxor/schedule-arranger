@@ -11,7 +11,7 @@ const User = sequelize.define('users', {
       type: DataTypes.STRING,
       allowNull: false,
     },
-  },{
+  }, {
     freezeTableName: true,
     timestamps: false,
 });
