@@ -3,7 +3,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var helmet = require('helmet')
+var helmet = require('helmet');
 var session = require('express-session');
 var passport = require('passport');
 
@@ -44,7 +44,7 @@ passport.use(new GitHubStrategy({
       clientID: GITHUB_CLIENT_ID,
       clientSecret: GITHUB_CLIENT_SECRET,
       callbackURL: 'http://localhost:8000/auth/github/callback',
-    },function (accessToken, refreshToken, profile, done) {
+    }, function (accessToken, refreshToken, profile, done) {
       process.nextTick(function () {
         User.upsert({
           userId: profile.id,
@@ -58,7 +58,8 @@ passport.use(new GitHubStrategy({
 
 var indexRouter = require('./routes/index');
 var loginRouter = require('./routes/login');
-var logoutRouter= require('./routes/logout')
+var logoutRouter = require('./routes/logout');
+var schedulesRouter = require('./routes/schedules');
 
 var app = express();
 app.use(helmet());
@@ -80,6 +81,7 @@ app.use(passport.session());
 app.use('/', indexRouter);
 app.use('/login', loginRouter);
 app.use('/logout', logoutRouter);
+app.use('/schedules', schedulesRouter);
 
 app.get('/auth/github',
   passport.authenticate('github', { scope: ['user:email'] }),
@@ -93,12 +95,12 @@ app.get('/auth/github/callback',
 });
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
