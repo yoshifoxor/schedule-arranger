@@ -23,6 +23,7 @@
   "extensions": [
     "esbenp.prettier-vscode",
     "mhutchie.git-graph",
+    "ms-azuretools.vscode-docker",
     "GitHub.copilot",
     "Orta.vscode-jest"
   ]
