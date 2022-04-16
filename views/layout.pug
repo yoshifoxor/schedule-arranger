@@ -1,8 +1,23 @@
+
+
 doctype html
 html
   head
-    title= title
-    link(rel='stylesheet', href='/stylesheets/style.css')
+    title 予定調整くん
+    meta(charset="utf-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no")
+    link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous")
   body
-    block content
-    script(src='/javascripts/bundle.js')
+    nav.navbar.navbar-light.bg-light
+      div.navbar-header
+        a(href="/").navbar-brand.nav-link 予定調整くん
+      ul.navbar-nav
+        if user
+          li.nav-item
+            a(href="/logout").nav-link #{user.username} をログアウト
+        else
+          li.nav-item
+            a(href="/login").nav-link ログイン
+    div.container
+      block content
+    script(src="/javascripts/bundle.js")
