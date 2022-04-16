@@ -8,6 +8,7 @@ const Schedule = require('../models/schedule');
 const Candidate = require('../models/candidate');
 const Availability = require('../models/availability');
 const Comment = require('../models/comment');
+const deleteScheduleAggregate = require('../routes/schedules').deleteScheduleAggregate;
 
 const setUp = () => {
   passportStub.install(app);
@@ -156,7 +157,6 @@ describe('/schedules/:scheduleId/users/:userId/comments', () => {
   });
 });
 
-
 describe('/schedules/:scheduleId?edit=1', () => {
   beforeAll(() => { setUp(); });
   afterAll(() => { tearDown(); });
@@ -198,31 +198,3 @@ describe('/schedules/:scheduleId?edit=1', () => {
     });
   });
 });
-
-function deleteScheduleAggregate(scheduleId, done, err) {
-  const promiseCommentDestroy = Comment.findAll({
-    where: { scheduleId: scheduleId },
-  }).then(comments => {
-    return Promise.all(comments.map(c => c.destroy()));
-  });
-
-  Availability.findAll({
-    where: { scheduleId: scheduleId },
-  }).then(availabilities => {
-    const promises = availabilities.map(a => a.destroy());
-    return Promise.all(promises);
-  }).then(() => {
-    return Candidate.findAll({
-      where: { scheduleId: scheduleId },
-    });
-  }).then(candidates => {
-    const promises = candidates.map(c => c.destroy());
-    promises.push(promiseCommentDestroy);
-    return Promise.all(promises);
-  }).then(() => {
-    return Schedule.findByPk(scheduleId).then(s => s.destroy());
-  }).then(() => {
-    if (err) return done(err);
-    done();
-  });
-}
