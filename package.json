@@ -1,6 +1,6 @@
 {
   "name": "schedule-arranger",
-  "version": "1.0.421",
+  "version": "1.0.422",
   "private": true,
   "repository": "https://github.com/yoshifoxor/schedule-arranger.git",
   "author": "yoshifoxor <yshs.adachi@gmail.com>",
@@ -9,7 +9,9 @@
     "test": "jest --testTimeout=10000 --forceExit --maxWorkers=49%"
   },
   "dependencies": {
+    "bootstrap": "4.6.1",
     "cookie-parser": "~1.4.6",
+    "dayjs": "^1.11.1",
     "debug": "~4.3.3",
     "dotenv": "^16.0.0",
     "express": "~4.17.2",
@@ -22,6 +24,7 @@
     "passport-github2": "^0.1.12",
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.3",
+    "popper.js": "^1.16.1",
     "pug": "3.0.2",
     "sequelize": "^6.17.0",
     "uuid": "^8.3.2"
