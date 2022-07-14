@@ -7,7 +7,9 @@ var helmet = require('helmet');
 var session = require('express-session');
 var passport = require('passport');
 
-require('dotenv').config();
+if (process.env.NODE_ENV === 'development') {
+  require('dotenv').config();
+}
 
 // モデルの読み込み
 var User = require('./models/user');
@@ -95,8 +97,14 @@ app.get('/auth/github',
 app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
   function (req, res) {
-    res.redirect('/');
-});
+    var loginFrom = req.cookies.loginFrom;
+    // オープンリダイレクタ脆弱性対策
+    if (loginFrom && loginFrom.startsWith('/')) {
+      res.clearCookie('loginFrom');
+      res.redirect(loginFrom);
+    } else {
+      res.redirect('/');
+    }});
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
