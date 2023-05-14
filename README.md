@@ -1,9 +1,5 @@
 # schedule-arranger
 
-# Usage
+[![Application Test](https://github.com/yoshifoxor/schedule-arranger/actions/workflows/develop.yml/badge.svg)](https://github.com/yoshifoxor/schedule-arranger/actions/workflows/develop.yml)
 
-- Fork and clone or Download this repositoty.
-
-- cd schedule-arranger
-- npm install
-- npm start
+## 予定調整アプリ
