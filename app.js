@@ -9,6 +9,25 @@ var passport = require('passport');
 
 require('dotenv').config();
 
+// モデルの読み込み
+var User = require('./models/user');
+var Schedule = require('./models/schedule');
+var Availability = require('./models/availability');
+var Candidate = require('./models/candidate');
+var Comment = require('./models/comment');
+
+User.sync().then(() => {
+  Schedule.belongsTo(User, { foreignKey: 'createdBy' });
+  Schedule.sync();
+  Comment.belongsTo(User, { foreignKey: 'userId' });
+  Comment.sync();
+  Availability.belongsTo(User, { foreignKey: 'userId' });
+  Candidate.sync().then(() => {
+    Availability.belongsTo(Candidate, { foreignKey: 'candidateId' });
+    Availability.sync();
+  });
+});
+
 var GitHubStrategy = require('passport-github2').Strategy;
 var GITHUB_CLIENT_ID = process.env.CLIENT_ID;
 var GITHUB_CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -27,7 +46,12 @@ passport.use(new GitHubStrategy({
       callbackURL: 'http://localhost:8000/auth/github/callback',
     },function (accessToken, refreshToken, profile, done) {
       process.nextTick(function () {
-        return done(null, profile);
+        User.upsert({
+          userId: profile.id,
+          username: profile.username,
+        }).then(() => {
+          done(null, profile);
+        });
       });
     }
 ));
