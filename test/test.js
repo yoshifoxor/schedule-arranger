@@ -46,52 +46,46 @@ describe('/logout', () => {
 });
 
 describe('/schedules', () => {
-  beforeAll(() => { setUp(); });
-  afterAll(() => { tearDown(); });
-
-  test('予定が作成でき、表示される', done => {
-    User.upsert({ userId: 0, username: 'testuser' }).then(() => {
-      request(app)
-        .post('/schedules')
-        .send({
-          scheduleName: 'テスト予定1',
-          memo: 'テストメモ1\r\nテストメモ2',
-          candidates: 'テスト候補1\r\nテスト候補2\r\nテスト候補3'
-        })
-        .expect('Location', /schedules/)
-        .expect(302)
-        .end((err, res) => {
-          const createdSchedulePath = res.headers.location;
-          request(app)
-            .get(createdSchedulePath)
-            .expect(/テスト予定1/)
-            .expect(/テストメモ1/)
-            .expect(/テストメモ2/)
-            .expect(/テスト候補1/)
-            .expect(/テスト候補2/)
-            .expect(/テスト候補3/)
-            .expect(200)
-            .end((err, res) => {
-              if (err) return done(err);
-              // テストで作成したデータを削除
-              const [_, scheduleId] = createdSchedulePath.split('/schedules/');
-              Candidate.findAll({
-                where: { scheduleId: scheduleId }
-              }).then(candidates => {
-                const promises = candidates.map(c => {
-                  return c.destroy();
-                });
-                Promise.all(promises).then(() => {
-                  Schedule.findByPk(scheduleId).then(s => {
-                    s.destroy().then(() => {
-                      if (err) return done(err);
-                      done();
-                    });
-                  });
-                });
-              });
-            });
-        });
+  let scheduleId = '';
+  beforeAll(() => {
+    setUp();
+  });
+  afterAll(async () => {
+    tearDown();
+    // テストで作成したデータを削除
+    const candidates = await Candidate.findAll({
+      where: { scheduleId: scheduleId },
     });
+    const promises = candidates.map(c => {
+      return c.destroy();
+    });
+    await Promise.all(promises);
+    const s = await Schedule.findByPk(scheduleId);
+    await s.destroy();
+  });
+
+  test('予定が作成でき、表示される', async () => {
+    await User.upsert({ userId: 0, username: 'testuser' });
+    const res = await request(app)
+      .post('/schedules')
+      .send({
+        scheduleName: 'テスト予定1',
+        memo: 'テストメモ1\r\nテストメモ2',
+        candidates: 'テスト候補1\r\nテスト候補2\r\nテスト候補3',
+      })
+      .expect('Location', /schedules/)
+      .expect(302);
+
+    const createdSchedulePath = res.headers.location;
+    scheduleId = createdSchedulePath.split('/schedules/')[1];
+    await request(app)
+      .get(createdSchedulePath)
+      .expect(/テスト予定1/)
+      .expect(/テストメモ1/)
+      .expect(/テストメモ2/)
+      .expect(/テスト候補1/)
+      .expect(/テスト候補2/)
+      .expect(/テスト候補3/)
+      .expect(200);
   });
 });
