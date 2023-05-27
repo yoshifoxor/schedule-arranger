@@ -1,6 +1,5 @@
 'use strict';
 const request = require('supertest');
-const assert = require('assert');
 const app = require('../app');
 const passportStub = require('passport-stub');
 const User = require('../models/user');
@@ -54,16 +53,7 @@ describe('/schedules', () => {
   });
   afterAll(async () => {
     tearDown();
-    // テストで作成したデータを削除
-    const candidates = await Candidate.findAll({
-      where: { scheduleId: scheduleId },
-    });
-    const promises = candidates.map(c => {
-      return c.destroy();
-    });
-    await Promise.all(promises);
-    const s = await Schedule.findByPk(scheduleId);
-    await s.destroy();
+    await deleteScheduleAggregate(scheduleId);
   });
 
   test('予定が作成でき、表示される', async () => {
@@ -93,60 +83,58 @@ describe('/schedules', () => {
 });
 
 describe('/schedules/:scheduleId/users/:userId/candidates/:candidateId', () => {
-  beforeAll(() => { setUp(); });
-  afterAll(() => { tearDown(); });
+  let scheduleId = '';
+  beforeAll(() => {
+    setUp()
+  });
+  afterAll(async () => {
+    tearDown()
+    await deleteScheduleAggregate(scheduleId);
+  });
 
-  test('出欠が更新できる', (done) => {
-    User.upsert({ userId: 0, username: 'testuser' }).then(() => {
-      request(app)
-        .post('/schedules')
-        .send({ scheduleName: 'テスト出欠更新予定1', memo: 'テスト出欠更新メモ1', candidates: 'テスト出欠更新候補1' })
-        .end((err, res) => {
-          const createdSchedulePath = res.headers.location;
-          const [_, scheduleId] = createdSchedulePath.split('/schedules/');
-          Candidate.findOne({
-            where: { scheduleId: scheduleId }
-          }).then((candidate) => {
-            // 更新がされることをテスト
-            const userId = 0;
-            request(app)
-              .post(`/schedules/${scheduleId}/users/${userId}/candidates/${candidate.candidateId}`)
-              .send({ availability: 2 }) // 出席に更新
-              .expect('{"status":"OK","availability":2}')
-              .end((err, res) => {
-                Availability.findAll({
-                  where: { scheduleId: scheduleId }
-                }).then((availabilities) => {
-                  assert.strictEqual(availabilities.length, 1);
-                  assert.strictEqual(availabilities[0].availability, 2);
-                  deleteScheduleAggregate(scheduleId, done, err);
-                });
-              });
-          });
-        });
+  test('出欠が更新できる', async () => {
+    await User.upsert({ userId: 0, username: 'testuser' });
+    const res = await request(app)
+      .post('/schedules')
+      .send({
+        scheduleName: 'テスト出欠更新予定1',
+        memo: 'テスト出欠更新メモ1',
+        candidates: 'テスト出欠更新候補1',
+      });
+    const createdSchedulePath = res.headers.location;
+    scheduleId = createdSchedulePath.split('/schedules/')[1];
+    const candidate = await Candidate.findOne({
+      where: { scheduleId: scheduleId },
     });
+    // 更新がされることをテスト
+    const userId = 0;
+    await request(app)
+      .post(`/schedules/${scheduleId}/users/${userId}/candidates/${candidate.candidateId}`)
+      .send({ availability: 2 }) // 出席に更新
+      .expect('{"status":"OK","availability":2}');
+    const availabilities = await Availability.findAll({
+      where: { scheduleId: scheduleId },
+    });
+    expect(availabilities.length).toBe(1);
+    expect(availabilities[0].availability).toBe(2);
   });
 });
 
-function deleteScheduleAggregate(scheduleId, done, err) {
-  Availability.findAll({
-    where: { scheduleId: scheduleId }
-  }).then((availabilities) => {
-    const promises = availabilities.map((a) => { return a.destroy(); });
-    Promise.all(promises).then(() => {
-      Candidate.findAll({
-        where: { scheduleId: scheduleId }
-      }).then((candidates) => {
-        const promises = candidates.map((c) => { return c.destroy(); });
-        Promise.all(promises).then(() => {
-          Schedule.findByPk(scheduleId).then((s) => {
-            s.destroy().then(() => {
-              if (err) return done(err);
-              done();
-            });
-          });
-        });
-      });
-    });
+async function deleteScheduleAggregate(scheduleId) {
+  const availabilities = await Availability.findAll({
+    where: { scheduleId: scheduleId },
   });
+  const promisesAvailabilityDestroy = availabilities.map(a => {
+    return a.destroy();
+  });
+  await Promise.all(promisesAvailabilityDestroy);
+  const candidates = await Candidate.findAll({
+    where: { scheduleId: scheduleId },
+  });
+  const promisesCandidateDestroy = candidates.map(c => {
+    return c.destroy();
+  });
+  await Promise.all(promisesCandidateDestroy);
+  const s = await Schedule.findByPk(scheduleId);
+  await s.destroy();
 }
