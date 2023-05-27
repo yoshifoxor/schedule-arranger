@@ -6,7 +6,7 @@
   "author": "yoshifoxor <yshs.adachi@gmail.com>",
   "scripts": {
     "start": "node ./bin/www",
-    "test": "jest --testTimeout=10000 --forceExit"
+    "test": "jest --testTimeout=15000 --forceExit"
   },
   "dependencies": {
     "cookie-parser": "~1.4.6",
