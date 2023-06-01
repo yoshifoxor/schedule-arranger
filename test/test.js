@@ -6,6 +6,7 @@ const User = require('../models/user');
 const Schedule = require('../models/schedule');
 const Candidate = require('../models/candidate');
 const Availability = require('../models/availability');
+const Comment = require('../models/comment');
 
 const setUp = () => {
   passportStub.install(app);
@@ -108,9 +109,7 @@ describe('/schedules/:scheduleId/users/:userId/candidates/:candidateId', () => {
       // 更新がされることをテスト
       const userId = 0;
       await request(app)
-        .post(
-          `/schedules/${scheduleId}/users/${userId}/candidates/${candidate.candidateId}`
-        )
+        .post(`/schedules/${scheduleId}/users/${userId}/candidates/${candidate.candidateId}`)
         .send({ availability: 2 }) // 出席に更新
         .expect('{"status":"OK","availability":2}');
       const availabilities = await Availability.findAll({
@@ -124,7 +123,87 @@ describe('/schedules/:scheduleId/users/:userId/candidates/:candidateId', () => {
   });
 });
 
+describe('/schedules/:scheduleId/users/:userId/comments', () => {
+  let scheduleId = '';
+  beforeAll(() => {
+    setUp();
+  });
+
+  afterAll(() => {
+    tearDown();
+  });
+
+  test('コメントが更新できる', async () => {
+    User.upsert({ userId: 0, username: 'testuser' }).then(async () => {
+      const res = await request(app).post('/schedules').send({
+        scheduleName: 'テストコメント更新予定1',
+        memo: 'テストコメント更新メモ1',
+        candidates: 'テストコメント更新候補1',
+      });
+      const createdSchedulePath = res.headers.location;
+      scheduleId = createdSchedulePath.split('/schedules/')[1];
+      // 更新がされることをテスト
+      const userId = 0;
+      await request(app)
+        .post(`/schedules/${scheduleId}/users/${userId}/comments`)
+        .send({ comment: 'testcomment' })
+        .expect('{"status":"OK","comment":"testcomment"}');
+      const comments = await Comment.findAll({
+        where: { scheduleId: scheduleId },
+      });
+      expect(comments.length).toBe(1);
+      expect(comments[0].comment).toBe('testcomment');
+
+      await deleteScheduleAggregate(scheduleId);
+    });
+  });
+});
+
+describe('/schedules/:scheduleId/users/:userId/comments', () => {
+  let scheduleId = '';
+  beforeAll(() => {
+    setUp();
+  });
+
+  afterAll(async () => {
+    tearDown();
+  });
+
+  test('コメントが更新できる', async () => {
+    User.upsert({ userId: 0, username: 'testuser' }).then(async () => {
+      const res = await request(app).post('/schedules').send({
+        scheduleName: 'テストコメント更新予定1',
+        memo: 'テストコメント更新メモ1',
+        candidates: 'テストコメント更新候補1',
+      });
+      const createdSchedulePath = res.headers.location;
+      scheduleId = createdSchedulePath.split('/schedules/')[1];
+      // 更新がされることをテスト
+      const userId = 0;
+      await request(app)
+        .post(`/schedules/${scheduleId}/users/${userId}/comments`)
+        .send({ comment: 'testcomment' })
+        .expect('{"status":"OK","comment":"testcomment"}');
+      const comments = await Comment.findAll({
+        where: { scheduleId: scheduleId },
+      });
+      expect(comments.length).toBe(1);
+      expect(comments[0].comment).toBe('testcomment');
+
+      await deleteScheduleAggregate(scheduleId);
+    });
+  });
+});
+
 async function deleteScheduleAggregate(scheduleId) {
+  const comments = await Comment.findAll({
+    where: { scheduleId: scheduleId },
+  });
+  const promisesCommentDestroy = comments.map(c => {
+    return c.destroy();
+  });
+  await Promise.all(promisesCommentDestroy);
+
   const availabilities = await Availability.findAll({
     where: { scheduleId: scheduleId },
   });
@@ -132,6 +211,7 @@ async function deleteScheduleAggregate(scheduleId) {
     return a.destroy();
   });
   await Promise.all(promisesAvailabilityDestroy);
+
   const candidates = await Candidate.findAll({
     where: { scheduleId: scheduleId },
   });
@@ -139,6 +219,7 @@ async function deleteScheduleAggregate(scheduleId) {
     return c.destroy();
   });
   await Promise.all(promisesCandidateDestroy);
+
   const s = await Schedule.findByPk(scheduleId);
   await s.destroy();
 }
