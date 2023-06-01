@@ -6,6 +6,7 @@ const User = require('../models/user');
 const Schedule = require('../models/schedule');
 const Candidate = require('../models/candidate');
 const Availability = require('../models/availability');
+const Comment = require('../models/comment');
 
 const setUp = () => {
   passportStub.install(app);
