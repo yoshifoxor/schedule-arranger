@@ -7,6 +7,7 @@ const Schedule = require('../models/schedule');
 const Candidate = require('../models/candidate');
 const Availability = require('../models/availability');
 const Comment = require('../models/comment');
+const deleteScheduleAggregate = require('../routes/schedules').deleteScheduleAggregate;
 
 const setUp = () => {
   passportStub.install(app);
@@ -130,42 +131,6 @@ describe('/schedules/:scheduleId/users/:userId/comments', () => {
   });
 
   afterAll(() => {
-    tearDown();
-  });
-
-  test('コメントが更新できる', async () => {
-    User.upsert({ userId: 0, username: 'testuser' }).then(async () => {
-      const res = await request(app).post('/schedules').send({
-        scheduleName: 'テストコメント更新予定1',
-        memo: 'テストコメント更新メモ1',
-        candidates: 'テストコメント更新候補1',
-      });
-      const createdSchedulePath = res.headers.location;
-      scheduleId = createdSchedulePath.split('/schedules/')[1];
-      // 更新がされることをテスト
-      const userId = 0;
-      await request(app)
-        .post(`/schedules/${scheduleId}/users/${userId}/comments`)
-        .send({ comment: 'testcomment' })
-        .expect('{"status":"OK","comment":"testcomment"}');
-      const comments = await Comment.findAll({
-        where: { scheduleId: scheduleId },
-      });
-      expect(comments.length).toBe(1);
-      expect(comments[0].comment).toBe('testcomment');
-
-      await deleteScheduleAggregate(scheduleId);
-    });
-  });
-});
-
-describe('/schedules/:scheduleId/users/:userId/comments', () => {
-  let scheduleId = '';
-  beforeAll(() => {
-    setUp();
-  });
-
-  afterAll(async () => {
     tearDown();
   });
 
