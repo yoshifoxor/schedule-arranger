@@ -16,26 +16,15 @@ router.get('/new', authenticationEnsurer, (req, res, next) => {
 router.post('/', authenticationEnsurer, async (req, res, next) => {
   const scheduleId = uuidv4();
   const updatedAt = new Date();
-  const schedule = await Schedule.create({
+  await Schedule.create({
     scheduleId: scheduleId,
     scheduleName: req.body.scheduleName.slice(0, 255) || '（名称未設定）',
     memo: req.body.memo,
     createdBy: req.user.id,
     updatedAt: updatedAt,
   });
-  const candidateNames = req.body.candidates
-    .trim()
-    .split('\n')
-    .map(s => s.trim())
-    .filter(s => s !== '');
-  const candidates = candidateNames.map(c => {
-    return {
-      candidateName: c,
-      scheduleId: schedule.scheduleId,
-    };
-  });
-  await Candidate.bulkCreate(candidates);
-  res.redirect(`/schedules/${schedule.scheduleId}`);
+
+  createCandidatesAndRedirect(parseCandidateNames(req), scheduleId, res);
 });
 
 router.get('/:scheduleId', authenticationEnsurer, async (req, res, next) => {
@@ -102,10 +91,10 @@ router.get('/:scheduleId', authenticationEnsurer, async (req, res, next) => {
 
     // コメント取得
     const comments = await Comment.findAll({
-      where: { scheduleId: schedule.scheduleId }
+      where: { scheduleId: schedule.scheduleId },
     });
-    const commentMap = new Map();  // key: userId, value: comment
-    comments.forEach((comment) => {
+    const commentMap = new Map(); // key: userId, value: comment
+    comments.forEach(comment => {
       commentMap.set(comment.userId, comment.comment);
     });
 
@@ -123,5 +112,121 @@ router.get('/:scheduleId', authenticationEnsurer, async (req, res, next) => {
     next(err);
   }
 });
+
+router.get('/:scheduleId/edit', authenticationEnsurer, async (req, res, next) => {
+    const schedule = await Schedule.findOne({
+      where: {
+        scheduleId: req.params.scheduleId,
+      },
+    });
+    if (isMine(req, schedule)) {
+      // 作成者のみが編集フォームを開ける
+      const candidates = await Candidate.findAll({
+        where: { scheduleId: schedule.scheduleId },
+        order: [['candidateId', 'ASC']],
+      });
+      res.render('edit', {
+        user: req.user,
+        schedule: schedule,
+        candidates: candidates,
+      });
+    } else {
+      const err = new Error('指定された予定がない、または、予定する権限がありません');
+      err.status = 404;
+      next(err);
+    }
+});
+
+function isMine(req, schedule) {
+  return schedule && parseInt(schedule.createdBy) === parseInt(req.user.id);
+}
+
+router.post('/:scheduleId', authenticationEnsurer, async (req, res, next) => {
+  let schedule = await Schedule.findOne({
+    where: {
+      scheduleId: req.params.scheduleId,
+    },
+  });
+  if (schedule && isMine(req, schedule)) {
+    if (parseInt(req.query.edit) === 1) {
+      const updatedAt = new Date();
+      schedule = await schedule.update({
+        scheduleId: schedule.scheduleId,
+        scheduleName: req.body.scheduleName.slice(0, 255) || '（名称未設定）',
+        memo: req.body.memo,
+        createdBy: req.user.id,
+        updatedAt: updatedAt,
+      });
+      // 追加されているかチェック
+      const candidateNames = parseCandidateNames(req);
+      if (candidateNames) {
+        createCandidatesAndRedirect(candidateNames, schedule.scheduleId, res);
+      } else {
+        res.redirect(`/schedules/${schedule.scheduleId}`);
+      }
+    } else if (parseInt(req.query.delete) === 1) {
+      await deleteScheduleAggregate(req.params.scheduleId);
+      res.redirect('/');
+    } else {
+      const err = new Error('不正なリクエストです');
+      err.status = 400;
+      next(err);
+    }
+  } else {
+    const err = new Error('指定された予定がない、または、編集する権限がありません');
+    err.status = 404;
+    next(err);
+  }
+});
+
+async function deleteScheduleAggregate(scheduleId) {
+  const comments = await Comment.findAll({
+    where: { scheduleId: scheduleId },
+  });
+  const promisesCommentDestroy = comments.map(c => {
+    return c.destroy();
+  });
+  await Promise.all(promisesCommentDestroy);
+
+  const availabilities = await Availability.findAll({
+    where: { scheduleId: scheduleId },
+  });
+  const promisesAvailabilityDestroy = availabilities.map(a => {
+    return a.destroy();
+  });
+  await Promise.all(promisesAvailabilityDestroy);
+
+  const candidates = await Candidate.findAll({
+    where: { scheduleId: scheduleId },
+  });
+  const promisesCandidateDestroy = candidates.map(c => {
+    return c.destroy();
+  });
+  await Promise.all(promisesCandidateDestroy);
+
+  const s = await Schedule.findByPk(scheduleId);
+  await s.destroy();
+}
+
+router.deleteScheduleAggregate = deleteScheduleAggregate;
+
+async function createCandidatesAndRedirect(candidateNames, scheduleId, res) {
+  const candidates = candidateNames.map(c => {
+    return {
+      candidateName: c,
+      scheduleId: scheduleId,
+    };
+  });
+  await Candidate.bulkCreate(candidates);
+  res.redirect(`/schedules/${scheduleId}`);
+}
+
+function parseCandidateNames(req) {
+  return req.body.candidates
+    .trim()
+    .split('\n')
+    .map(s => s.trim())
+    .filter(s => s !== '');
+}
 
 module.exports = router;
