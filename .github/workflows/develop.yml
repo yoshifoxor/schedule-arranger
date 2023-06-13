@@ -51,6 +51,8 @@ jobs:
       env:
         CLIENT_ID: ${{secrets.CLIENT_ID}}
         CLIENT_SECRET: ${{secrets.CLIENT_SECRET}}
+        COOKIE_SECRET: ${{secrets.COOKIE_SECRET}}
+        CSURF_SECRET: ${{secrets.CSURF_SECRET}}
         SESSION_SECRET: ${{secrets.SESSION_SECRET}}
         POSTGRES_HOST: localhost
         POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}

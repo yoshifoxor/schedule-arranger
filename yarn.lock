@@ -4508,6 +4508,11 @@ throat@^6.0.1:
   resolved "https://registry.yarnpkg.com/throat/-/throat-6.0.2.tgz#51a3fbb5e11ae72e2cf74861ed5c8020f89f29fe"
   integrity sha512-WKexMoJj3vEuK0yFEapj8y64V0A6xcuPuK9Gt1d0R+dzCSJc0lHqQytAbSB4cDAK0dWh4T0E2ETkoLE2WZ41OQ==
 
+tiny-csrf@^1.1.3:
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/tiny-csrf/-/tiny-csrf-1.1.3.tgz#cb68ce9299685eb02f2524d85c22fb01d4e91de4"
+  integrity sha512-aQqV/yA93E/7Q/gQ4UHoYmYzrzS5wDEtj2fTXiB1zgT2lEI0CGo+5UK3FtlePn8OECsVlGZWeWBFFnvqudNcwA==
+
 tmpl@1.0.5:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/tmpl/-/tmpl-1.0.5.tgz#8683e0b902bb9c20c4f726e3c0b69f36518c07cc"

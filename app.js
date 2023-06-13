@@ -6,6 +6,7 @@ var logger = require('morgan');
 var helmet = require('helmet');
 var session = require('express-session');
 var passport = require('passport');
+var csurf = require('tiny-csrf');
 
 require('dotenv').config();
 
@@ -42,8 +43,8 @@ passport.deserializeUser(function (obj, done) {
 passport.use(new GitHubStrategy({
       clientID: GITHUB_CLIENT_ID,
       clientSecret: GITHUB_CLIENT_SECRET,
-      callbackURL: 'http://localhost:8000/auth/github/callback',
-    },function (accessToken, refreshToken, profile, done) {
+      callbackURL: process.env.CALLBACK_URL || 'http://localhost:8000/auth/github/callback'
+    }, function (accessToken, refreshToken, profile, done) {
       process.nextTick(async function () {
         await User.upsert({
           userId: profile.id,
@@ -71,12 +72,16 @@ app.set('view engine', 'pug');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use(
+  csurf(process.env.CSURF_SECRET, ['POST'], [/.*\/(candidates|comments).*/i])
+);
 
 app.use('/', indexRouter);
 app.use('/login', loginRouter);
@@ -93,7 +98,14 @@ app.get('/auth/github',
 app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
   function (req, res) {
-    res.redirect('/');
+    const loginFrom = req.cookies.loginFrom;
+    // オープンリダイレクタ脆弱性対策
+    if (loginFrom && loginFrom.startsWith('/')) {
+      res.clearCookie('loginFrom');
+      res.redirect(loginFrom);
+    } else {
+      res.redirect('/');
+    }
 });
 
 // catch 404 and forward to error handler

@@ -10,7 +10,7 @@ const Availability = require('../models/availability');
 const Comment = require('../models/comment');
 
 router.get('/new', authenticationEnsurer, (req, res, next) => {
-  res.render('new', { user: req.user });
+  res.render('new', { user: req.user, csrfToken: req.csrfToken() });
 });
 
 router.post('/', authenticationEnsurer, async (req, res, next) => {
@@ -129,6 +129,7 @@ router.get('/:scheduleId/edit', authenticationEnsurer, async (req, res, next) =>
         user: req.user,
         schedule: schedule,
         candidates: candidates,
+        csrfToken: req.csrfToken(),
       });
     } else {
       const err = new Error('指定された予定がない、または、予定する権限がありません');
