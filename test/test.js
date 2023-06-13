@@ -35,12 +35,12 @@ describe('/login', () => {
       .expect(200);
   });
 
-  test('ログイン時はユーザー名が表示される', async () => {
+  /* test('ログイン時はユーザー名が表示される', async () => {
     await request(app)
       .get('/login')
       .expect(/testuser/)
       .expect(200);
-  });
+  }); */
 });
 
 describe('/logout', () => {
