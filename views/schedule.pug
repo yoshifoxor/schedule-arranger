@@ -41,9 +41,7 @@ block content
           td
             p
               small#self-comment #{commentMap.get(user.userId)}
-            button(
-              data-schedule-id=schedule.scheduleId
-              data-user-id=user.userId)#self-comment-button.btn-xs.btn-info 編集
+            button(data-schedule-id=schedule.scheduleId data-user-id=user.userId)#self-comment-button.btn.btn-info 編集
         else
           td
             p

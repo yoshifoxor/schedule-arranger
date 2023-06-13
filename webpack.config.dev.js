@@ -1,3 +1,4 @@
+// const webpack = require('webpack');
 module.exports = {
   context: `${__dirname}/app`,
   mode: 'development',
@@ -11,12 +12,12 @@ module.exports = {
       {
         test: /\.js$/,
         exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-env'],
-          },
-        },
+        use: [{
+            loader: 'babel-loader',
+            options: {
+              presets: ['@babel/preset-env'],
+            },
+          }],
       },
     ],
   },

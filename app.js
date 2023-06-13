@@ -6,6 +6,7 @@ var logger = require('morgan');
 var helmet = require('helmet');
 var session = require('express-session');
 var passport = require('passport');
+var csurf = require('tiny-csrf');
 
 if (process.env.NODE_ENV === 'development') {
   require('dotenv').config();
@@ -18,16 +19,15 @@ var Availability = require('./models/availability');
 var Candidate = require('./models/candidate');
 var Comment = require('./models/comment');
 
-User.sync().then(() => {
+User.sync().then(async () => {
   Schedule.belongsTo(User, { foreignKey: 'createdBy' });
   Schedule.sync();
   Comment.belongsTo(User, { foreignKey: 'userId' });
   Comment.sync();
   Availability.belongsTo(User, { foreignKey: 'userId' });
-  Candidate.sync().then(() => {
-    Availability.belongsTo(Candidate, { foreignKey: 'candidateId' });
-    Availability.sync();
-  });
+  await Candidate.sync();
+  Availability.belongsTo(Candidate, { foreignKey: 'candidateId' });
+  Availability.sync();
 });
 
 var GitHubStrategy = require('passport-github2').Strategy;
@@ -45,18 +45,14 @@ passport.deserializeUser(function (obj, done) {
 passport.use(new GitHubStrategy({
       clientID: GITHUB_CLIENT_ID,
       clientSecret: GITHUB_CLIENT_SECRET,
-      callbackURL: process.env.HEROKU_URL
-        ? process.env.HEROKU_URL + 'auth/github/callback'
-        : 'http://localhost:8000/auth/github/callback',
-    },
-    function (accessToken, refreshToken, profile, done) {
-      process.nextTick(function () {
-        User.upsert({
+      callbackURL: process.env.CALLBACK_URL || 'http://localhost:8000/auth/github/callback'
+    }, function (accessToken, refreshToken, profile, done) {
+      process.nextTick(async function () {
+        await User.upsert({
           userId: profile.id,
           username: profile.username,
-        }).then(() => {
-          done(null, profile);
         });
+        done(null, profile);
       });
     }
 ));
@@ -78,12 +74,16 @@ app.set('view engine', 'pug');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use(
+  csurf(process.env.CSURF_SECRET, ['POST'], [/.*\/(candidates|comments).*/i])
+);
 
 app.use('/', indexRouter);
 app.use('/login', loginRouter);
@@ -100,14 +100,15 @@ app.get('/auth/github',
 app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
   function (req, res) {
-    var loginFrom = req.cookies.loginFrom;
+    const loginFrom = req.cookies.loginFrom;
     // オープンリダイレクタ脆弱性対策
     if (loginFrom && loginFrom.startsWith('/')) {
       res.clearCookie('loginFrom');
       res.redirect(loginFrom);
     } else {
       res.redirect('/');
-    }});
+    }
+});
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
