@@ -9,10 +9,23 @@ const { database, dialect, host, username, password } = {
   username: 'postgres',
   password: process.env.POSTGRES_PASSWORD,
 };
+const dialectOptions = {
+  ssl: {
+    require: true,
+    rejectUnauthorized: false,
+  }
+};
 
-const sequelize = new Sequelize(database, username, password, {
-  dialect: dialect,
-  host: host,
-});
+const defaultOptions = { dialect, logging: false };
+
+const sequelize = process.env.DATABASE_URL ?
+  // 本番環境
+  new Sequelize(process.env.DATABASE_URL, {
+    ...defaultOptions, dialectOptions
+  }) :
+  // 開発環境
+  new Sequelize(database, username, password, {
+    ...defaultOptions, host
+  });
 
 module.exports = { sequelize, DataTypes };
