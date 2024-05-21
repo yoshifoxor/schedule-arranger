@@ -2,7 +2,7 @@ name: Application Test
 
 on:
   push:
-    branches: [ dev2023 ]
+    branches: [ dev-2023 ]
 
 jobs:
   build:
