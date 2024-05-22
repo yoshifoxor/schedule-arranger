@@ -3,9 +3,11 @@ const express = require('express');
 const path = require('node:path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
-const helmet = require('helmet')
+const helmet = require('helmet');
 const session = require('express-session');
 const passport = require('passport');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient({ log: ['query'] });
 
 require('dotenv').config();
 
@@ -21,15 +23,29 @@ passport.use(new GitHubStrategy({
       clientSecret: GITHUB_CLIENT_SECRET,
       callbackURL: 'http://localhost:8000/auth/github/callback',
     }, (accessToken, refreshToken, profile, done) => {
-      process.nextTick(() => {
-        return done(null, profile);
+      process.nextTick(async () => {
+        const userId = parseInt(profile.id);
+
+        const data = {
+          userId,
+          username: profile.username,
+        };
+
+        await prisma.user.upsert({
+          where: { userId },
+          create: data,
+          update: data,
+        });
+
+        done(null, profile);
       });
     }
 ));
 
 const indexRouter = require('./routes/index');
 const loginRouter = require('./routes/login');
-const logoutRouter= require('./routes/logout')
+const logoutRouter = require('./routes/logout');
+const schedulesRouter = require('./routes/schedules');
 
 const app = express();
 app.use(helmet());
@@ -51,6 +67,7 @@ app.use(passport.session());
 app.use('/', indexRouter);
 app.use('/login', loginRouter);
 app.use('/logout', logoutRouter);
+app.use('/schedules', schedulesRouter);
 
 app.get('/auth/github',
   passport.authenticate('github', { scope: ['user:email'] })
@@ -63,12 +80,12 @@ app.get('/auth/github/callback',
 });
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

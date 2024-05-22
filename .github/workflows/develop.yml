@@ -31,7 +31,7 @@ jobs:
         node-version: 20
     - name: Get yarn cache directory path
       id: yarn-cache-dir-path
-      run: echo "::set-output name=dir::$(yarn cache dir)"
+      run: echo "name=dir::$(yarn cache dir)" >> $GITHUB_OUTPUT
 
     - name: Cache dependencies
       uses: actions/cache@v4
@@ -43,6 +43,7 @@ jobs:
           ${{ runner.os }}-yarn-
 
     - run: yarn install --prefer-offline
+    - run: npx prisma db push
 
     - run: yarn test
       env:
