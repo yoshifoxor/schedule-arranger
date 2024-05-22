@@ -8,12 +8,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
+      DATABASE_URL: ${{secrets.DATABASE_URL}}
+
     services:
       postgres:
         image: postgres:15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
+          POSTGRES_PASSWORD: ${{env.POSTGRES_PASSWORD}}
           POSTGRES_DB: schedule_arranger
         options: >-
           --health-cmd pg_isready
@@ -31,7 +35,7 @@ jobs:
         node-version: 20
     - name: Get yarn cache directory path
       id: yarn-cache-dir-path
-      run: echo "name=dir::$(yarn cache dir)" >> $GITHUB_OUTPUT
+      run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
     - name: Cache dependencies
       uses: actions/cache@v4
@@ -51,5 +55,5 @@ jobs:
         CLIENT_SECRET: ${{secrets.CLIENT_SECRET}}
         SESSION_SECRET: ${{secrets.SESSION_SECRET}}
         POSTGRES_HOST: localhost
-        POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
+        POSTGRES_PASSWORD: ${{env.POSTGRES_PASSWORD}}
         POSTGRES_PORT: 5432

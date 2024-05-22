@@ -48,7 +48,7 @@ describe('/schedules', () => {
   let scheduleId = '';
 
   beforeAll(() => { setUp(); });
-  afterAll(async() => {
+  afterAll(async () => {
     tearDown();
     // テストで作成したデータを削除
     await prisma.candidate.deleteMany({ where: { scheduleId } });
