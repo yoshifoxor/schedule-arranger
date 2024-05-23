@@ -9,16 +9,16 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
-      DATABASE_URL: ${{secrets.DATABASE_URL}}
+      POSTGRES_PASSWORD:  ${{secrets.POSTGRES_PASSWORD}}
+      DATABASE_URL:       ${{secrets.DATABASE_URL}}
 
     services:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ${{env.POSTGRES_PASSWORD}}
-          POSTGRES_DB: schedule_arranger
+          POSTGRES_USER:      postgres
+          POSTGRES_PASSWORD:  ${{env.POSTGRES_PASSWORD}}
+          POSTGRES_DB:        schedule_arranger
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -34,15 +34,15 @@ jobs:
       with:
         node-version: 20
     - name: Get yarn cache directory path
-      id: yarn-cache-dir-path
-      run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+      id:   yarn-cache-dir-path
+      run:  echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
     - name: Cache dependencies
       uses: actions/cache@v4
-      id: yarn-cache
+      id:   yarn-cache
       with:
         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        key:  ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-yarn-
 
@@ -51,9 +51,9 @@ jobs:
 
     - run: yarn test
       env:
-        CLIENT_ID: ${{secrets.CLIENT_ID}}
-        CLIENT_SECRET: ${{secrets.CLIENT_SECRET}}
-        SESSION_SECRET: ${{secrets.SESSION_SECRET}}
-        POSTGRES_HOST: localhost
-        POSTGRES_PASSWORD: ${{env.POSTGRES_PASSWORD}}
-        POSTGRES_PORT: 5432
+        CLIENT_ID:          ${{secrets.CLIENT_ID}}
+        CLIENT_SECRET:      ${{secrets.CLIENT_SECRET}}
+        SESSION_SECRET:     ${{secrets.SESSION_SECRET}}
+        POSTGRES_HOST:      localhost
+        POSTGRES_PASSWORD:  ${{env.POSTGRES_PASSWORD}}
+        POSTGRES_PORT:      5432

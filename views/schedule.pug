@@ -8,11 +8,16 @@ block content
   table
     tr
       th 予定
-      each user in users
+      each user in alluser
         th #{user.username}
     each candidate in candidates
       tr
         th #{candidate.candidateName}
-        each user in users
+        each user in alluser
+          - const availability = availabilityMapMap.get(user.userId).get(candidate.candidateId)
+          - const availabilityLabels = ['欠', '？', '出'];
           td
-            button 欠席
+            if user.isSelf
+              button #{availabilityLabels[availability]}
+            else
+              p #{availabilityLabels[availability]}
