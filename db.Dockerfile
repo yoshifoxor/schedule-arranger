@@ -1,4 +1,4 @@
-FROM --platform=linux/x86_64 postgres:14.2
+FROM --platform=linux/x86_64 postgres:15.2
 
 RUN apt-get update \
 && apt-get install --no-install-recommends -y curl \
