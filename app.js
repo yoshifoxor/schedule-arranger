@@ -1,68 +1,56 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var helmet = require('helmet');
-var session = require('express-session');
-var passport = require('passport');
-var csurf = require('tiny-csrf');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('node:path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const helmet = require('helmet');
+const session = require('express-session');
+const passport = require('passport');
+const csurf = require('tiny-csrf');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient({ log: ['query'] });
 
 require('dotenv').config();
 
-// モデルの読み込み
-var User = require('./models/user');
-var Schedule = require('./models/schedule');
-var Availability = require('./models/availability');
-var Candidate = require('./models/candidate');
-var Comment = require('./models/comment');
+const GitHubStrategy = require('passport-github2').Strategy;
+const GITHUB_CLIENT_ID = process.env.CLIENT_ID;
+const GITHUB_CLIENT_SECRET = process.env.CLIENT_SECRET;
 
-User.sync().then(async () => {
-  Schedule.belongsTo(User, { foreignKey: 'createdBy' });
-  Schedule.sync();
-  Comment.belongsTo(User, { foreignKey: 'userId' });
-  Comment.sync();
-  Availability.belongsTo(User, { foreignKey: 'userId' });
-  await Candidate.sync();
-  Availability.belongsTo(Candidate, { foreignKey: 'candidateId' });
-  Availability.sync();
-});
-
-var GitHubStrategy = require('passport-github2').Strategy;
-var GITHUB_CLIENT_ID = process.env.CLIENT_ID;
-var GITHUB_CLIENT_SECRET = process.env.CLIENT_SECRET;
-
-passport.serializeUser(function (user, done) {
-  done(null, user);
-});
-
-passport.deserializeUser(function (obj, done) {
-  done(null, obj);
-});
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
 
 passport.use(new GitHubStrategy({
       clientID: GITHUB_CLIENT_ID,
       clientSecret: GITHUB_CLIENT_SECRET,
-      callbackURL: process.env.CALLBACK_URL || 'http://localhost:8000/auth/github/callback'
-    }, function (accessToken, refreshToken, profile, done) {
-      process.nextTick(async function () {
-        await User.upsert({
-          userId: profile.id,
+      callbackURL: process.env.CALLBACK_URL || 'http://localhost:8000/auth/github/callback',
+    }, (accessToken, refreshToken, profile, done) => {
+      process.nextTick(async () => {
+        const userId = parseInt(profile.id);
+
+        const data = {
+          userId,
           username: profile.username,
+        };
+
+        await prisma.user.upsert({
+          where: { userId },
+          create: data,
+          update: data,
         });
+
         done(null, profile);
       });
     }
 ));
 
-var indexRouter = require('./routes/index');
-var loginRouter = require('./routes/login');
-var logoutRouter = require('./routes/logout');
-var schedulesRouter = require('./routes/schedules');
-var availabilitiesRouter = require('./routes/availabilities');
-var commentsRouter = require('./routes/comments');
+const indexRouter = require('./routes/index');
+const loginRouter = require('./routes/login');
+const logoutRouter = require('./routes/logout');
+const schedulesRouter = require('./routes/schedules');
+const availabilitiesRouter = require('./routes/availabilities');
+const commentsRouter = require('./routes/comments');
 
-var app = express();
+const app = express();
 app.use(helmet());
 
 // view engine setup
@@ -79,9 +67,7 @@ app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUniniti
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use(
-  csurf(process.env.CSURF_SECRET, ['POST'], [/.*\/(candidates|comments).*/i])
-);
+app.use(csurf(process.env.CSURF_SECRET, ['POST'], [/.*\/(candidates|comments).*/i]));
 
 app.use('/', indexRouter);
 app.use('/login', loginRouter);
@@ -91,13 +77,12 @@ app.use('/schedules', availabilitiesRouter);
 app.use('/schedules', commentsRouter);
 
 app.get('/auth/github',
-  passport.authenticate('github', { scope: ['user:email'] }),
-  function (req, res) {
-});
+  passport.authenticate('github', { scope: ['user:email'] })
+);
 
 app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
-  function (req, res) {
+  (req, res) => {
     const loginFrom = req.cookies.loginFrom;
     // オープンリダイレクタ脆弱性対策
     if (loginFrom && loginFrom.startsWith('/')) {
@@ -106,7 +91,8 @@ app.get('/auth/github/callback',
     } else {
       res.redirect('/');
     }
-});
+  }
+);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

@@ -2,19 +2,23 @@ name: Application Test
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ dev-2023 ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      POSTGRES_PASSWORD:  ${{secrets.POSTGRES_PASSWORD}}
+      DATABASE_URL:       ${{secrets.DATABASE_URL}}
+
     services:
       postgres:
-        image: postgres:14.2
+        image: postgres:15
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
-          POSTGRES_DB: schedule_arranger
+          POSTGRES_USER:      postgres
+          POSTGRES_PASSWORD:  ${{env.POSTGRES_PASSWORD}}
+          POSTGRES_DB:        schedule_arranger
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -24,36 +28,37 @@ jobs:
           - 5432:5432
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js 18
-      uses: actions/setup-node@v3
+    - uses: actions/checkout@v4
+    - name: Use Node.js 20
+      uses: actions/setup-node@v4
       with:
-        node-version: 18
-
+        node-version: 20
     - name: Get yarn cache directory path
-      id: yarn-cache-dir-path
-      run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+      id:   yarn-cache-dir-path
+      run:  echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+
     - name: Cache dependencies
-      uses: actions/cache@v3
-      id: yarn-cache
+      uses: actions/cache@v4
+      id:   yarn-cache
       with:
         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        key:  ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-yarn-
 
     - run: yarn install --prefer-offline
+    - run: npx prisma db push
 
     - name: Get number of CPU cores
       id: cpu-cores
       uses: SimenB/github-actions-cpu-cores@v1
     - run: yarn test --max-workers ${{ steps.cpu-cores.outputs.count }}
       env:
-        CLIENT_ID: ${{secrets.CLIENT_ID}}
-        CLIENT_SECRET: ${{secrets.CLIENT_SECRET}}
-        COOKIE_SECRET: ${{secrets.COOKIE_SECRET}}
-        CSURF_SECRET: ${{secrets.CSURF_SECRET}}
-        SESSION_SECRET: ${{secrets.SESSION_SECRET}}
-        POSTGRES_HOST: localhost
-        POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
-        POSTGRES_PORT: 5432
+        CLIENT_ID:          ${{secrets.CLIENT_ID}}
+        CLIENT_SECRET:      ${{secrets.CLIENT_SECRET}}
+        COOKIE_SECRET:      ${{secrets.COOKIE_SECRET}}
+        CSURF_SECRET:       ${{secrets.CSURF_SECRET}}
+        SESSION_SECRET:     ${{secrets.SESSION_SECRET}}
+        POSTGRES_HOST:      localhost
+        POSTGRES_PASSWORD:  ${{env.POSTGRES_PASSWORD}}
+        POSTGRES_PORT:      5432
