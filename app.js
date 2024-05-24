@@ -6,6 +6,7 @@ const logger = require('morgan');
 const helmet = require('helmet');
 const session = require('express-session');
 const passport = require('passport');
+const csurf = require('tiny-csrf');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient({ log: ['query'] });
 
@@ -21,7 +22,7 @@ passport.deserializeUser((obj, done) => done(null, obj));
 passport.use(new GitHubStrategy({
       clientID: GITHUB_CLIENT_ID,
       clientSecret: GITHUB_CLIENT_SECRET,
-      callbackURL: 'http://localhost:8000/auth/github/callback',
+      callbackURL: process.env.CALLBACK_URL || 'http://localhost:8000/auth/github/callback',
     }, (accessToken, refreshToken, profile, done) => {
       process.nextTick(async () => {
         const userId = parseInt(profile.id);
@@ -59,12 +60,15 @@ app.set('view engine', 'pug');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use(csurf(process.env.CSURF_SECRET, ['POST'], [/.*\/(candidates|comments).*/i]));
 
 app.use('/', indexRouter);
 app.use('/login', loginRouter);
@@ -80,8 +84,16 @@ app.get('/auth/github',
 app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
-    res.redirect('/');
-});
+    const loginFrom = req.cookies.loginFrom;
+    // オープンリダイレクタ脆弱性対策
+    if (loginFrom && loginFrom.startsWith('/')) {
+      res.clearCookie('loginFrom');
+      res.redirect(loginFrom);
+    } else {
+      res.redirect('/');
+    }
+  }
+);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

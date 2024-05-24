@@ -4,7 +4,6 @@ services:
     tty: true
     ports:
       - 8000:8000
-      - 5555:5555
     volumes:
       - .:/app
       - node_modules:/app/node_modules
@@ -12,7 +11,7 @@ services:
       - db
   db:
     build:
-      context: '.'
+      context: .
       dockerfile: db.Dockerfile
     environment:
       POSTGRES_USER: postgres
