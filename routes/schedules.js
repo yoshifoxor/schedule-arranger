@@ -27,7 +27,6 @@ router.post('/', authenticationEnsurer, async (req, res, next) => {
     candidateName: c,
     scheduleId: schedule.scheduleId,
   }));
-
   await prisma.candidate.createMany({
     data: candidates,
   });
@@ -51,7 +50,6 @@ router.get('/:scheduleId', authenticationEnsurer, async (req, res, next) => {
       where: { scheduleId: schedule.scheduleId },
       orderBy: { candidateId: 'asc' },
     });
-
     // データベースからその予定の全ての出欠を取得する
     const availabilities = await prisma.availability.findMany({
       where: { scheduleId: schedule.scheduleId },
@@ -101,12 +99,23 @@ router.get('/:scheduleId', authenticationEnsurer, async (req, res, next) => {
       });
     });
 
+    // コメント取得
+    // key: userId, value: comment
+    const comments = await prisma.comment.findMany({
+      where: { scheduleId: schedule.scheduleId },
+    });
+    const commentMap = new Map();
+    comments.forEach(comment => {
+      commentMap.set(comment.userId, comment.comment);
+    });
+
     res.render('schedule', {
       user: req.user,
       schedule: schedule,
       candidates: candidates,
       alluser: users,
       availabilityMapMap: availabilityMapMap,
+      commentMap: commentMap,
     });
   } else {
     const err = new Error('指定された予定は見つかりません');

@@ -47,6 +47,7 @@ const loginRouter = require('./routes/login');
 const logoutRouter = require('./routes/logout');
 const schedulesRouter = require('./routes/schedules');
 const availabilitiesRouter = require('./routes/availabilities');
+const commentsRouter = require('./routes/comments');
 
 const app = express();
 app.use(helmet());
@@ -70,6 +71,7 @@ app.use('/login', loginRouter);
 app.use('/logout', logoutRouter);
 app.use('/schedules', schedulesRouter);
 app.use('/schedules', availabilitiesRouter);
+app.use('/schedules', commentsRouter);
 
 app.get('/auth/github',
   passport.authenticate('github', { scope: ['user:email'] })
