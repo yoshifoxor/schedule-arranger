@@ -1,0 +1,64 @@
+name: Application Test
+
+on:
+  push:
+    branches: [ feature/replace-framework ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      POSTGRES_PASSWORD:  ${{secrets.POSTGRES_PASSWORD}}
+      DATABASE_URL:       ${{secrets.DATABASE_URL}}
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER:      postgres
+          POSTGRES_PASSWORD:  ${{env.POSTGRES_PASSWORD}}
+          POSTGRES_DB:        schedule_arranger
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Get yarn cache directory path
+      id:   yarn-cache-dir-path
+      run:  echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      id:   yarn-cache
+      with:
+        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        key:  ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
+
+    - run: yarn install --prefer-offline
+    - run: npx prisma db push
+
+    - name: Get number of CPU cores
+      id: cpu-cores
+      uses: SimenB/github-actions-cpu-cores@v1
+    - run: yarn test --max-workers ${{ steps.cpu-cores.outputs.count }}
+      env:
+        CLIENT_ID:          ${{secrets.CLIENT_ID_GITHUB}}
+        CLIENT_SECRET:      ${{secrets.CLIENT_SECRET_GITHUB}}
+        COOKIE_SECRET:      ${{secrets.COOKIE_SECRET}}
+        CSURF_SECRET:       ${{secrets.CSURF_SECRET}}
+        SESSION_PASSWORD:     ${{secrets.SESSION_PASSWORD}}
+        POSTGRES_HOST:      localhost
+        POSTGRES_PASSWORD:  ${{env.POSTGRES_PASSWORD}}
+        POSTGRES_PORT:      5432

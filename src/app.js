@@ -19,6 +19,7 @@ const prisma = new PrismaClient({ log: [ "query" ] });
 const indexRouter = require('./routes/index');
 const loginRouter = require('./routes/login');
 const logoutRouter = require('./routes/logout');
+const scheduleRouter = require("./routes/schedules");
 
 const app = new Hono();
 
@@ -40,10 +41,10 @@ app.use(async (c, next) => {
 
 // GitHub 認証
 app.use('/auth/github', async (c, next) => {
-  const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = env(c);
+  const { CLIENT_ID_GITHUB, CLIENT_SECRET_GITHUB } = env(c);
   const authHandler = githubAuth({
-    client_id: GITHUB_CLIENT_ID,
-    client_secret: GITHUB_CLIENT_SECRET,
+    client_id: CLIENT_ID_GITHUB,
+    client_secret: CLIENT_SECRET_GITHUB,
     scope: ['user:email'],
     oauthApp: true,
   });
@@ -75,6 +76,7 @@ app.get('/auth/github', async (c) => {
 app.route('/', indexRouter);
 app.route('/login', loginRouter);
 app.route('/logout', logoutRouter);
+app.route("/schedules", scheduleRouter);
 
 // 404 Not Found
 app.notFound((c) => {
