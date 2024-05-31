@@ -10,7 +10,7 @@ const testUser = {
 function mockIronSession() {
   const ironSession = require('iron-session');
   jest.spyOn(ironSession, 'getIronSession').mockReturnValue({
-    user: { login: testUser.username, id: testUser.userId },
+    user: { id: testUser.userId,login: testUser.username },
     save: jest.fn(),
     destroy: jest.fn(),
   });
