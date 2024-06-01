@@ -138,6 +138,15 @@ app.get('/:scheduleId', ensureAuthenticated(), async (c) => {
     });
   });
 
+  // コメント取得
+  const comments = await prisma.comment.findMany({
+    where: { scheduleId: schedule.scheduleId },
+  });
+  const commentMap = new Map(); // key: userId, value: comment
+  comments.forEach((comment) => {
+    commentMap.set(comment.userId, comment.comment);
+  });
+
   return c.html(
     layout(
       c,
@@ -152,8 +161,7 @@ app.get('/:scheduleId', ensureAuthenticated(), async (c) => {
             <th>予定</th>
             ${users.map((user) => html`<th>${user.username}</th>`)}
           </tr>
-          ${candidates.map(
-            (candidate) => html`
+          ${candidates.map((candidate) => html`
               <tr>
                 <th>${candidate.candidateName}</th>
                 ${users.map((user) => {
@@ -165,7 +173,15 @@ app.get('/:scheduleId', ensureAuthenticated(), async (c) => {
                   return html`
                     <td>
                       ${user.isSelf
-                        ? html`<button>${label}</button>`
+                        ? html`<button
+                            data-schedule-id="${schedule.scheduleId}"
+                            data-user-id="${user.userId}"
+                            data-candidate-id="${candidate.candidateId}"
+                            data-availability="${availability}"
+                            class="availability-toggle-button"
+                          >
+                            ${label}
+                          </button>`
                         : html`<p>${label}</p>`}
                     </td>
                   `;
@@ -173,6 +189,28 @@ app.get('/:scheduleId', ensureAuthenticated(), async (c) => {
               </tr>
             `
           )}
+          <tr>
+            <th>コメント</th>
+            ${users.map((user) => {
+              const comment = commentMap.get(user.userId);
+              return html`
+                <td>
+                  <p id="${user.isSelf ? 'self-comment' : ''}">${comment}</p>
+                  ${user.isSelf
+                    ? html`
+                        <button
+                          data-schedule-id="${schedule.scheduleId}"
+                          data-user-id="${user.userId}"
+                          id="self-comment-button"
+                        >
+                          編集
+                        </button>
+                      `
+                    : ''}
+                </td>
+              `;
+            })}
+          </tr>
         </table>
       `
     )
