@@ -1,5 +1,5 @@
 module.exports = {
-  context: `${__dirname}/app`,
+  context: `${__dirname}/src/app`,
   mode: 'development',
   entry: './entry',
   output: {

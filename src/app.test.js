@@ -18,10 +18,8 @@ function mockIronSession() {
 
 // テストで作成したデータを削除
 async function deleteScheduleAggregate(scheduleId) {
-  await prisma.availability.deleteMany({ where: { scheduleId } });
-  await prisma.candidate.deleteMany({ where: { scheduleId } });
-  await prisma.comment.deleteMany({ where: { scheduleId } });
-  await prisma.schedule.delete({ where: { scheduleId } });
+  const { deleteScheduleAggregate } = require('./routes/schedules');
+  await deleteScheduleAggregate(scheduleId);
 }
 
 // フォームからリクエストを送信する
@@ -225,6 +223,130 @@ describe('/schedules/:scheduleId/users/:userId/comments', () => {
     const comments = await prisma.comment.findMany({ where: { scheduleId } });
     expect(comments.length).toBe(1);
     expect(comments[0].comment).toBe('testcomment');
+  });
+});
+
+describe('/schedules/:scheduleId/update', () => {
+  let scheduleId = '';
+  beforeAll(() => {
+    setUp();
+  });
+
+  afterAll(async () => {
+    tearDown();
+    await deleteScheduleAggregate(scheduleId);
+  });
+
+  test('予定が更新でき、候補が追加できる', async () => {
+    await prisma.user.upsert({
+      where: { userId: testUser.userId },
+      create: testUser,
+      update: testUser,
+    });
+
+    const app = require('./app');
+
+    const postRes = await sendFormRequest(app, '/schedules', {
+      scheduleName: 'テスト更新予定1',
+      memo: 'テスト更新メモ1',
+      candidates: 'テスト更新候補1',
+    });
+
+    scheduleId = getScheduleId(postRes.headers.get('Location'), '/schedules/');
+
+    const res = await sendFormRequest(app, `/schedules/${scheduleId}/update`, {
+      scheduleName: 'テスト更新予定2',
+      memo: 'テスト更新メモ2',
+      candidates: 'テスト更新候補2',
+    });
+
+    const schedule = await prisma.schedule.findUnique({
+      where: { scheduleId },
+    });
+    expect(schedule.scheduleName).toBe('テスト更新予定2');
+    expect(schedule.memo).toBe('テスト更新メモ2');
+
+    const candidates = await prisma.candidate.findMany({
+      where: { scheduleId },
+      orderBy: { candidateId: 'asc' },
+    });
+    expect(candidates.length).toBe(2);
+    expect(candidates[0].candidateName).toBe('テスト更新候補1');
+    expect(candidates[1].candidateName).toBe('テスト更新候補2');
+  });
+});
+
+describe('/schedules/:scheduleId/delete', () => {
+  beforeAll(() => {
+    setUp();
+  });
+
+  afterAll(() => {
+    tearDown();
+  });
+
+  test('予定に関連する全ての情報が削除できる', async () => {
+    await prisma.user.upsert({
+      where: { userId: testUser.userId },
+      create: testUser,
+      update: testUser,
+    });
+
+    const app = require('./app');
+
+    const postRes = await sendFormRequest(app, '/schedules', {
+      scheduleName: 'テスト削除予定1',
+      memo: 'テスト削除メモ1',
+      candidates: 'テスト削除候補1',
+    });
+
+    scheduleId = getScheduleId(postRes.headers.get('Location'), '/schedules/');
+
+    // 出欠作成
+    const candidate = await prisma.candidate.findFirst({
+      where: { scheduleId },
+    });
+    await sendJsonRequest(
+      app,
+      `/schedules/${scheduleId}/users/${testUser.userId}/candidates/${candidate.candidateId}`,
+      {
+        availability: 2,
+      }
+    );
+
+    // コメント作成
+    await sendJsonRequest(
+      app,
+      `/schedules/${scheduleId}/users/${testUser.userId}/comments`,
+      {
+        comment: 'testcomment',
+      }
+    );
+
+    // 削除
+    const res = await app.request(`/schedules/${scheduleId}/delete`, {
+      method: 'POST',
+    });
+    expect(res.status).toBe(302);
+
+    // テスト
+    const availabilities = await prisma.availability.findMany({
+      where: { scheduleId },
+    });
+    expect(availabilities.length).toBe(0);
+
+    const candidates = await prisma.candidate.findMany({
+      where: { scheduleId },
+    });
+    expect(candidates.length).toBe(0);
+
+    const comments = await prisma.comment.findMany({ where: { scheduleId } });
+    expect(comments.length).toBe(0);
+
+    const schedule = await prisma.schedule.findUnique({
+      where: { scheduleId },
+    });
+    expect(schedule).toBeNull();
   });
 });
 
