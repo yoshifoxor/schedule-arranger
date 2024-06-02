@@ -1,6 +1,9 @@
 'use strict';
 import $ from 'jquery';
 
+import 'bootstrap/dist/js/bootstrap.min.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 $('.availability-toggle-button').each((i, e) => {
   const button = $(e);
   button.on('click', () => {
@@ -9,7 +12,6 @@ $('.availability-toggle-button').each((i, e) => {
     const candidateId = button.data('candidate-id');
     const availability = parseInt(button.data('availability'));
     const nextAvailability = (availability + 1) % 3;
-
     fetch(`/schedules/${scheduleId}/users/${userId}/candidates/${candidateId}`,
       {
         method: 'POST',
@@ -20,6 +22,10 @@ $('.availability-toggle-button').each((i, e) => {
         button.data('availability', data.availability);
         const availabilityLabels = ['欠', '？', '出'];
         button.text(availabilityLabels[data.availability]);
+
+        const buttonStyles = ['btn-danger', 'btn-secondary', 'btn-success'];
+        button.removeClass('btn-danger btn-secondary btn-success');
+        button.addClass(buttonStyles[data.availability]);
       });
   });
 });

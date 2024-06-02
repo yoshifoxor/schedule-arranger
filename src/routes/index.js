@@ -4,11 +4,18 @@ const layout = require('../layout');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient({ log: ['query'] });
 
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault('Asia/Tokyo');
+
 const app = new Hono();
 
 function scheduleTable(schedules) {
   return html`
-    <table>
+    <table class="table">
       <tr>
         <th>予定名</th>
         <th>更新日時</th>
@@ -17,11 +24,9 @@ function scheduleTable(schedules) {
         (schedule) => html`
           <tr>
             <td>
-              <a href="/schedules/${schedule.scheduleId}">
-                ${schedule.scheduleName}
-              </a>
+              <a href="/schedules/${schedule.scheduleId}">${schedule.scheduleName}</a>
             </td>
-            <td>${schedule.updatedAt}</td>
+            <td>${schedule.formattedUpdatedAt}</td>
           </tr>
         `
       )}
@@ -37,30 +42,35 @@ app.get('/', async (c) => {
         orderBy: { updatedAt: 'desc' },
       })
     : [];
+  schedules.forEach((schedule) => {
+    schedule.formattedUpdatedAt = dayjs(schedule.updatedAt).tz().format('YYYY/MM/DD HH:mm');
+  });
 
   return c.html(
     layout(
       c,
-      '予定調整くん',
+      null,
       html`
-        <h1>予定調整くん</h1>
-        <p>Welcome to 予定調整くん</p>
+        <div class="my-3">
+          <div class="p-5 bg-light rounded-3">
+            <h1 class="text-body">予定調整くん</h1>
+            <p class="lead">予定調整くんは、GitHubで認証でき、予定を作って出欠が取れるサービスです。</p>
+          </div>
+        </div>
         ${user
           ? html`
-              <div>
-                <a href="/logout">${user.login} をログアウト</a>
+              <div class="my-3">
+                <h3 class="my-3">予定を作る</h3>
+                <a class="btn btn-primary" href="/schedules/new">予定を作る</a>
+                ${schedules.length > 0
+                  ? html`
+                      <h3 class="my-3">あなたの作った予定一覧</h3>
+                      ${scheduleTable(schedules)}
+                    `
+                  : ''}
               </div>
-              <div>
-                <a href="/schedules/new">予定を作る</a>
-              </div>
-              ${schedules.length > 0
-                ? html`
-                    <h3>あなたの作った予定一覧</h3>
-                    ${scheduleTable(schedules)}
-                  `
-                : ''}
             `
-          : html`<div><a href="/login">ログイン</a></div>`}
+          : ''}
       `
     )
   );

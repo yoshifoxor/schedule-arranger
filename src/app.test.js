@@ -300,7 +300,7 @@ describe('/schedules/:scheduleId/delete', () => {
       candidates: 'テスト削除候補1',
     });
 
-    scheduleId = getScheduleId(postRes.headers.get('Location'), '/schedules/');
+    const scheduleId = getScheduleId(postRes.headers.get('Location'), '/schedules/');
 
     // 出欠作成
     const candidate = await prisma.candidate.findFirst({
