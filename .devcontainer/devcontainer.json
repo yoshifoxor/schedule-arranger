@@ -1,0 +1,21 @@
+{
+  "name": "schedule-arranger",
+  "dockerComposeFile": ["../compose-dev.yaml"],
+
+  "service": "app",
+
+  "workspaceFolder": "/app",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mhutchie.git-graph",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker",
+        "VisualStudioExptTeam.vscodeintellicode"
+      ]
+    }
+  }
+
+}
