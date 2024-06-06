@@ -2,8 +2,8 @@ const path = require('node:path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
-  context: `${__dirname}/app`,
-  mode: 'development',
+  context: `${__dirname}/src/app`,
+  mode: 'production',
   entry: './entry',
   output: {
     clean: true,
@@ -12,8 +12,8 @@ module.exports = {
   },
   plugins: [
     new MiniCssExtractPlugin({
-      filename: 'stylesheets/bundle.css'
-    })
+      filename: 'stylesheets/bundle.css',
+    }),
   ],
   module: {
     rules: [
@@ -23,16 +23,14 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-env']
-          }
-        }
+            presets: ['@babel/preset-env'],
+          },
+        },
       },
       {
         test: /\.css$/,
-        use: [MiniCssExtractPlugin.loader, 'css-loader']
-      }
-    ]
+        use: [MiniCssExtractPlugin.loader, 'css-loader'],
+      },
+    ],
   },
-    devtool: 'source-map',
-
 };
