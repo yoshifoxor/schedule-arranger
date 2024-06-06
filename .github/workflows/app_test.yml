@@ -56,8 +56,7 @@ jobs:
       env:
         CLIENT_ID:          ${{secrets.CLIENT_ID_GITHUB}}
         CLIENT_SECRET:      ${{secrets.CLIENT_SECRET_GITHUB}}
-        COOKIE_SECRET:      ${{secrets.COOKIE_SECRET}}
-        CSURF_SECRET:       ${{secrets.CSURF_SECRET}}
+        CSRF_TRUSTED_ORIGIN:  ${{secrets.CSRF_TRUSTED_ORIGIN}}
         SESSION_PASSWORD:     ${{secrets.SESSION_PASSWORD}}
         POSTGRES_HOST:      localhost
         POSTGRES_PASSWORD:  ${{env.POSTGRES_PASSWORD}}
